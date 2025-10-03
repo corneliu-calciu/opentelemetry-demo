@@ -5,6 +5,6 @@ services:
     build:
       context: .
       dockerfile: src/product-catalog/Dockerfile
-    image: corneliucalciu/opentelemetry-demo-product-catalog:latest
+    image: corneliucalciu/opentelemetry-demo-product-catalog:0.0.1
 
 
