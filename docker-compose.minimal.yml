@@ -1,18 +1,12 @@
 # Copyright The OpenTelemetry Authors
 # SPDX-License-Identifier: Apache-2.0
 
-# x-default-logging: &logging
-#   driver: "json-file"
-#   options:
-#     max-size: "5m"
-#     max-file: "2"
-#     tag: "{{.Name}}"
-
 x-default-logging: &logging
-  driver: loki
+  driver: "json-file"
   options:
-    loki-url: "http://loki.edgecloudsystems.eu/loki/api/v1/push"
-    loki-external-labels: "container_name={{.Name}},service_name={{.Name}},environment=otel-demo"
+    max-size: "5m"
+    max-file: "2"
+    tag: "{{.Name}}"
 
 #docker plugin install grafana/loki-docker-driver:latest --alias loki --grant-all-permissions
 #docker plugin enable loki
@@ -208,7 +202,7 @@ services:
           memory: 250M
     restart: unless-stopped
     ports:
-      - "${FRONTEND_PORT}"
+      - "${FRONTEND_PORT}:${FRONTEND_PORT}"
     environment:
       - PORT=${FRONTEND_PORT}
       - FRONTEND_ADDR
@@ -253,51 +247,51 @@ services:
     logging: *logging
 
   # Frontend Proxy (Envoy)
-  frontend-proxy:
-    image: ${IMAGE_NAME}:${DEMO_VERSION}-frontend-proxy
-    container_name: frontend-proxy
-    build:
-      context: ./
-      dockerfile: ${FRONTEND_PROXY_DOCKERFILE}
-    deploy:
-      resources:
-        limits:
-          memory: 65M
-    restart: unless-stopped
-    ports:
-      - "${ENVOY_PORT}:${ENVOY_PORT}"
-      - 10000:10000
-    environment:
-      - FRONTEND_PORT
-      - FRONTEND_HOST
-      - LOCUST_WEB_HOST
-      - LOCUST_WEB_PORT
-      - GRAFANA_PORT
-      - GRAFANA_HOST
-      - JAEGER_PORT
-      - JAEGER_HOST
-      - OTEL_COLLECTOR_HOST
-      - IMAGE_PROVIDER_HOST
-      - IMAGE_PROVIDER_PORT
-      - OTEL_COLLECTOR_PORT_GRPC
-      - OTEL_COLLECTOR_PORT_HTTP
-      - OTEL_RESOURCE_ATTRIBUTES
-      - OTEL_SERVICE_NAME=frontend-proxy
-      - ENVOY_PORT
-      - FLAGD_HOST
-      - FLAGD_PORT
-      - FLAGD_UI_HOST
-      - FLAGD_UI_PORT
-    depends_on:
-      frontend:
-        condition: service_started
-      load-generator:
-        condition: service_started
-      jaeger:
-        condition: service_started
-      #grafana:
-      #  condition: service_started
-    dns_search: ""
+  # frontend-proxy:
+  #   image: ${IMAGE_NAME}:${DEMO_VERSION}-frontend-proxy
+  #   container_name: frontend-proxy
+  #   build:
+  #     context: ./
+  #     dockerfile: ${FRONTEND_PROXY_DOCKERFILE}
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         memory: 65M
+  #   restart: unless-stopped
+  #   ports:
+  #     - "${ENVOY_PORT}:${ENVOY_PORT}"
+  #     - 10000:10000
+  #   environment:
+  #     - FRONTEND_PORT
+  #     - FRONTEND_HOST
+  #     - LOCUST_WEB_HOST
+  #     - LOCUST_WEB_PORT
+  #     - GRAFANA_PORT
+  #     - GRAFANA_HOST
+  #     - JAEGER_PORT
+  #     - JAEGER_HOST
+  #     - OTEL_COLLECTOR_HOST
+  #     - IMAGE_PROVIDER_HOST
+  #     - IMAGE_PROVIDER_PORT
+  #     - OTEL_COLLECTOR_PORT_GRPC
+  #     - OTEL_COLLECTOR_PORT_HTTP
+  #     - OTEL_RESOURCE_ATTRIBUTES
+  #     - OTEL_SERVICE_NAME=frontend-proxy
+  #     - ENVOY_PORT
+  #     - FLAGD_HOST
+  #     - FLAGD_PORT
+  #     - FLAGD_UI_HOST
+  #     - FLAGD_UI_PORT
+  #   depends_on:
+  #     frontend:
+  #       condition: service_started
+  #     load-generator:
+  #       condition: service_started
+  #     jaeger:
+  #       condition: service_started
+  #     #grafana:
+  #     #  condition: service_started
+  #   dns_search: ""
 
   # image-provider
   image-provider:

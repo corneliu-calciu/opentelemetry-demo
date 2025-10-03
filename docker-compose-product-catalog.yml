@@ -1,0 +1,10 @@
+version: '2'
+services:
+  product-catalog:
+    container_name: product-catalog
+    build:
+      context: .
+      dockerfile: src/product-catalog/Dockerfile
+    image: corneliucalciu/opentelemetry-demo-product-catalog:latest
+
+

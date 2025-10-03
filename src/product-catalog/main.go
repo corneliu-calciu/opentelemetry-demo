@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io/fs"
 	"log/slog"
+	"math/rand/v2"
 	"net"
 	"os"
 	"os/signal"
@@ -51,6 +52,9 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
+// Add a logger to write to the console
+var consoleLogger *slog.Logger
+
 var (
 	logger            *slog.Logger
 	catalog           []*pb.Product
@@ -60,9 +64,11 @@ var (
 
 const DEFAULT_RELOAD_INTERVAL = 10
 
+const DEFAULT_INJECT_FAILURE = false
+
 func init() {
 	logger = otelslog.NewLogger("product-catalog")
-
+	consoleLogger = slog.New(slog.NewTextHandler(os.Stdout, nil))
 	loadProductCatalog()
 }
 
@@ -171,7 +177,12 @@ func main() {
 		logger.Error(err.Error())
 	}
 
-	svc := &productCatalog{}
+	svc := &productCatalog{injectFailure: DEFAULT_INJECT_FAILURE}
+	if svc.injectFailure {
+		consoleLogger.Info("Development mode Product Catalog service.")
+		svc.injectFailure = true
+	}
+
 	var port string
 	mustMapEnv(&port, "PRODUCT_CATALOG_PORT")
 
@@ -196,6 +207,8 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGKILL)
 	defer cancel()
 
+	consoleLogger.Info("Starting to serve gRPC server...")
+
 	go func() {
 		if err := srv.Serve(ln); err != nil {
 			logger.Error(fmt.Sprintf("Failed to serve gRPC server, err: %v", err))
@@ -210,6 +223,7 @@ func main() {
 
 type productCatalog struct {
 	pb.UnimplementedProductCatalogServiceServer
+	injectFailure bool
 }
 
 func loadProductCatalog() {
@@ -239,6 +253,7 @@ func loadProductCatalog() {
 			select {
 			case <-ticker.C:
 				logger.Info("Reloading Product Catalog...")
+				consoleLogger.Info("Reloading Product Catalog...")
 				catalog, err = readProductFiles()
 				if err != nil {
 					logger.Error(fmt.Sprintf("Error reading product files: %v", err))
@@ -250,6 +265,7 @@ func loadProductCatalog() {
 }
 
 func readProductFiles() ([]*pb.Product, error) {
+	consoleLogger.Info("Reading product files...")
 
 	// find all .json files in the products directory
 	entries, err := os.ReadDir("./products")
@@ -312,15 +328,31 @@ func (p *productCatalog) Watch(req *healthpb.HealthCheckRequest, ws healthpb.Hea
 }
 
 func (p *productCatalog) ListProducts(ctx context.Context, req *pb.Empty) (*pb.ListProductsResponse, error) {
+	consoleLogger.Info("ListProducts call made")
+
 	span := trace.SpanFromContext(ctx)
 
 	span.SetAttributes(
 		attribute.Int("app.products.count", len(catalog)),
 	)
+
+	// Add a 20% chance to fail the ListProducts call
+	if p.injectFailure && rand.Float64() < 0.2 {
+		msg := "Error: Product Catalog Fail due to database error"
+		span.SetStatus(otelcodes.Error, msg)
+		span.AddEvent(msg)
+		consoleLogger.Error("ListProducts call failed due to database error")
+		return nil, status.Errorf(codes.Internal, msg)
+	}
+
+	consoleLogger.Info("ListProducts successfully returned")
+
 	return &pb.ListProductsResponse{Products: catalog}, nil
 }
 
 func (p *productCatalog) GetProduct(ctx context.Context, req *pb.GetProductRequest) (*pb.Product, error) {
+	consoleLogger.Info("GetProduct call made with id: " + req.Id)
+
 	span := trace.SpanFromContext(ctx)
 	span.SetAttributes(
 		attribute.String("app.product.id", req.Id),
@@ -366,6 +398,9 @@ func (p *productCatalog) GetProduct(ctx context.Context, req *pb.GetProductReque
 }
 
 func (p *productCatalog) SearchProducts(ctx context.Context, req *pb.SearchProductsRequest) (*pb.SearchProductsResponse, error) {
+	// Add a log message to the console to indicate that the SearchProducts call is being made
+	consoleLogger.Info("SearchProducts call made with query: " + req.Query)
+
 	span := trace.SpanFromContext(ctx)
 
 	var result []*pb.Product
@@ -382,6 +417,8 @@ func (p *productCatalog) SearchProducts(ctx context.Context, req *pb.SearchProdu
 }
 
 func (p *productCatalog) checkProductFailure(ctx context.Context, id string) bool {
+	consoleLogger.Info("checkProductFailure call made with id: " + id)
+
 	if id != "OLJCESPC7Z" {
 		return false
 	}

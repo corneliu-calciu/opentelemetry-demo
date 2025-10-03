@@ -127,6 +127,12 @@ exporters:
     endpoint: "http://prometheus:9090/api/v1/otlp"
     tls:
       insecure: true
+  
+  otlphttp/loki:
+    endpoint: https://loki.edgecloudsystems.eu/otlp
+    tls:
+      insecure_skip_verify: true   # set to true if Loki uses self-signed certs
+
   # opensearch:
   #   logs_index: otel-logs
   #   logs_index_time_format: "yyyy-MM-dd"
@@ -167,7 +173,7 @@ service:
     logs:
       receivers: [otlp]
       processors: [resourcedetection, memory_limiter, batch]
-      exporters: [ debug]
+      exporters: [otlphttp/loki, debug]
   telemetry:
     metrics:
       level: detailed
