@@ -166,15 +166,28 @@ connectors:
     # # this is relevant, since grafana expects the historgram metrics in seconds
     # histogram:
     #   unit: "s"
-    # dimensions:
-    #   - name: http.method
-    #     default: GET
-    #   - name: http.status_code
-    #   - name: rpc.method
-    #   - name: rpc.service
-    #   - name: rpc.system
-    #   - name: rpc.grpc.status_code
-    #   - name: host.name
+    dimensions:
+      - name: http.method
+        default: GET
+      - name: http.status_code
+      - name: rpc.method
+      - name: rpc.service
+      - name: rpc.system
+      - name: rpc.grpc.status_code
+      - name: host.name
+      - name: service.namespace
+        default: online-retail
+      - name: deployment.environment
+        default: production
+      - name: service.version
+        default: ${IMAGE_VERSION}
+      - name: cloud.provider
+        default: gcp
+      - name: cloud.platform
+        default: gce
+      - name: cloud.account.id
+        default: boutique-319619
+      
     # exemplars:
     #   enabled: true
     # dimensions_cache_size: 1000
