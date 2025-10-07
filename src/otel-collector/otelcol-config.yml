@@ -187,7 +187,11 @@ connectors:
         default: gce
       - name: cloud.account.id
         default: boutique-319619
-      
+      - name: application.name
+        default: boutique-otel
+      - name: business.service
+        default: online-astrolab-store
+
     # exemplars:
     #   enabled: true
     # dimensions_cache_size: 1000
