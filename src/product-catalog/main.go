@@ -331,6 +331,13 @@ func (p *productCatalog) GetProduct(ctx context.Context, req *pb.GetProductReque
 		msg := "Error: Product Catalog Fail Feature Flag Enabled"
 		span.SetStatus(otelcodes.Error, msg)
 		span.AddEvent(msg)
+
+		logger.LogAttrs(
+			ctx,
+			slog.LevelError, "Product Catalog Failure",
+			slog.String("app.product.name", "Error: unhandled exception"),
+			slog.String("app.product.id", req.Id),
+		)
 		return nil, status.Errorf(codes.Internal, msg)
 	}
 
@@ -357,7 +364,7 @@ func (p *productCatalog) GetProduct(ctx context.Context, req *pb.GetProductReque
 
 	logger.LogAttrs(
 		ctx,
-		slog.LevelInfo, "Product Found",
+		slog.LevelInfo, "Product found successfully",
 		slog.String("app.product.name", found.Name),
 		slog.String("app.product.id", req.Id),
 	)

@@ -630,7 +630,7 @@ services:
       "file:./etc/flagd/demo.flagd.json"
     ]
     ports:
-      - "${FLAGD_PORT}"
+      - "${FLAGD_PORT}:${FLAGD_PORT}"
       - "${FLAGD_OFREP_PORT}"
     volumes:
       - ./src/flagd:/etc/flagd

@@ -153,3 +153,15 @@ For more information about the emeritus role, see the [community repository](htt
 [Tracetest]: https://github.com/kubeshop/opentelemetry-demo
 [Uptrace]: https://github.com/uptrace/uptrace/tree/master/example/opentelemetry-demo
 [VictoriaMetrics]: https://github.com/VictoriaMetrics-Community/opentelemetry-demo
+
+
+# Build product-catalog
+docker build -t corneliucalciu/opentelemetry-demo-product-catalog:0.0.2 -f src/product-catalog/Dockerfile .
+
+# Flagd evaluation
+# Check
+curl -X POST "http://localhost:32793/flagd.evaluation.v1.Service/ResolveBoolean"   \
+-d '{"flagKey":"productCatalogFailure","context":{}}' -H "Content-Type: application/json"
+
+# Kafka
+curl -X POST "http://localhost:8013/flagd.evaluation.v1.Service/ResolveInt"   -d '{"flagKey":"kafkaQueueProblems","context":{}}' -H "Content-Type: application/json"
