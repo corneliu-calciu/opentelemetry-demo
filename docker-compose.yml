@@ -420,7 +420,7 @@ services:
           memory: 1500M
     restart: unless-stopped
     ports:
-      - "${LOCUST_WEB_PORT}"
+      - "${LOCUST_WEB_PORT}:${LOCUST_WEB_PORT}"
     environment:
       - LOCUST_WEB_PORT
       - LOCUST_USERS
@@ -660,7 +660,7 @@ services:
       - SECRET_KEY_BASE=yYrECL4qbNwleYInGJYvVnSkwJuSQJ4ijPTx5tirGUXrbznFIBFVJdPl5t6O9ASw
       - PHX_HOST=localhost
     ports:
-      - "${FLAGD_UI_PORT}"
+      - "${FLAGD_UI_PORT}:${FLAGD_UI_PORT}"
     depends_on:
       otel-collector:
         condition: service_started
@@ -756,7 +756,7 @@ services:
           memory: 1200M
     restart: unless-stopped
     ports:
-      - "${JAEGER_UI_PORT}"
+      - "${JAEGER_UI_PORT}:${JAEGER_UI_PORT}"
       - "${JAEGER_GRPC_PORT}"
     environment:
       - JAEGER_HOST
@@ -784,7 +784,7 @@ services:
       - ./src/grafana/grafana.ini:/etc/grafana/grafana.ini
       - ./src/grafana/provisioning/:/etc/grafana/provisioning/
     ports:
-      - "${GRAFANA_PORT}"
+      - "${GRAFANA_PORT}:${GRAFANA_PORT}"
     logging: *logging
 
   # OpenTelemetry Collector
@@ -889,3 +889,16 @@ services:
       timeout: 10s
       retries: 10
     logging: *logging
+
+  # Loki
+  loki:
+    image: ${LOKI_IMAGE}  
+    container_name: loki
+    ports:
+      - "${LOKI_PORT}:${LOKI_PORT}"
+    command: ["-config.file=/etc/loki/local-config.yaml"]
+    deploy:
+      resources:
+        limits:
+          memory: 120M
+    restart: unless-stopped
