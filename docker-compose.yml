@@ -351,6 +351,8 @@ services:
       - GRAFANA_HOST
       - JAEGER_UI_PORT
       - JAEGER_HOST
+      - LOKI_HOST
+      - LOKI_PORT
       - OTEL_COLLECTOR_HOST
       - IMAGE_PROVIDER_HOST
       - IMAGE_PROVIDER_PORT
@@ -373,6 +375,8 @@ services:
       jaeger:
         condition: service_started
       grafana:
+        condition: service_started
+      loki:
         condition: service_started
       flagd-ui:
         condition: service_started
@@ -696,6 +700,8 @@ services:
       - KAFKA_HEAP_OPTS=-Xmx400m -Xms400m
       # Workaround on OSX for https://bugs.openjdk.org/browse/JDK-8345296
       - _JAVA_OPTIONS
+    ports:
+      - "${KAFKA_PORT}:${KAFKA_PORT}"
     healthcheck:
       test: nc -z kafka 9092
       start_period: 10s
