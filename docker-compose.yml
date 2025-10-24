@@ -784,8 +784,8 @@ services:
         limits:
           memory: 120M
     restart: unless-stopped
-    environment:
-      - "GF_INSTALL_PLUGINS=grafana-opensearch-datasource"
+    #environment:
+    #  - "GF_INSTALL_PLUGINS=grafana-opensearch-datasource"
     volumes:
       - ./src/grafana/grafana.ini:/etc/grafana/grafana.ini
       - ./src/grafana/provisioning/:/etc/grafana/provisioning/
@@ -815,8 +815,8 @@ services:
     depends_on:
       jaeger:
         condition: service_started
-      opensearch:
-        condition: service_healthy
+      #opensearch:
+      #  condition: service_healthy
     logging: *logging
     environment:
       - FRONTEND_PROXY_ADDR
@@ -856,45 +856,45 @@ services:
       - "${PROMETHEUS_PORT}:${PROMETHEUS_PORT}"
     logging: *logging
 
-  # OpenSearch
-  opensearch:
-    container_name: opensearch
-    build:
-      context: ./
-      dockerfile: ${OPENSEARCH_DOCKERFILE}
-      cache_from:
-        - ${IMAGE_NAME}:${IMAGE_VERSION}-opensearch
-    deploy:
-      resources:
-        limits:
-          memory: 800M
-    restart: unless-stopped
-    environment:
-      - cluster.name=demo-cluster
-      - node.name=demo-node
-      - bootstrap.memory_lock=true
-      - discovery.type=single-node
-      - OPENSEARCH_JAVA_OPTS=-Xms400m -Xmx400m
-      - DISABLE_INSTALL_DEMO_CONFIG=true
-      - DISABLE_SECURITY_PLUGIN=true
-      # Workaround on OSX for https://bugs.openjdk.org/browse/JDK-8345296
-      - _JAVA_OPTIONS
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
-      nofile:
-        soft: 65536
-        hard: 65536
-    ports:
-      - "9200"
-    healthcheck:
-      test: curl -s http://localhost:9200/_cluster/health | grep -E '"status":"(green|yellow)"'
-      start_period: 10s
-      interval: 5s
-      timeout: 10s
-      retries: 10
-    logging: *logging
+  # # OpenSearch
+  # opensearch:
+  #   container_name: opensearch
+  #   build:
+  #     context: ./
+  #     dockerfile: ${OPENSEARCH_DOCKERFILE}
+  #     cache_from:
+  #       - ${IMAGE_NAME}:${IMAGE_VERSION}-opensearch
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         memory: 800M
+  #   restart: unless-stopped
+  #   environment:
+  #     - cluster.name=demo-cluster
+  #     - node.name=demo-node
+  #     - bootstrap.memory_lock=true
+  #     - discovery.type=single-node
+  #     - OPENSEARCH_JAVA_OPTS=-Xms400m -Xmx400m
+  #     - DISABLE_INSTALL_DEMO_CONFIG=true
+  #     - DISABLE_SECURITY_PLUGIN=true
+  #     # Workaround on OSX for https://bugs.openjdk.org/browse/JDK-8345296
+  #     - _JAVA_OPTIONS
+  #   ulimits:
+  #     memlock:
+  #       soft: -1
+  #       hard: -1
+  #     nofile:
+  #       soft: 65536
+  #       hard: 65536
+  #   ports:
+  #     - "9200"
+  #   healthcheck:
+  #     test: curl -s http://localhost:9200/_cluster/health | grep -E '"status":"(green|yellow)"'
+  #     start_period: 10s
+  #     interval: 5s
+  #     timeout: 10s
+  #     retries: 10
+  #   logging: *logging
 
   # Loki
   loki:
@@ -908,3 +908,44 @@ services:
         limits:
           memory: 120M
     restart: unless-stopped
+
+  # SLA monitoring
+  sla-monitoring:
+    image: avesha.azurecr.io/dev/sla-monitoring:0.0.1
+    container_name: sla-monitoring
+    restart: unless-stopped
+    environment:
+      # Prometheus Configuration
+      - PROMETHEUS_URL=http://${PROMETHEUS_HOST}:${PROMETHEUS_PORT}
+      # Kafka Configuration
+      - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_HOST}:${KAFKA_PORT}
+      - KAFKA_MAX_CONSUMER_LAG=${MONITORING_KAFKA_MAX_CONSUMER_LAG:-100}
+      - KAFKA_MONITOR_PRODUCER_DETAILS=${KAFKA_MONITOR_PRODUCER_DETAILS:-true}
+      
+      # ServiceNow Configuration
+      - SERVICE_NOW_INSTANCE=${MONITORING_SERVICE_NOW_INSTANCE}
+      - SERVICE_NOW_USERNAME=${MONITORING_SERVICE_NOW_USERNAME}
+      - SERVICE_NOW_PASSWORD=${MONITORING_SERVICE_NOW_PASSWORD}
+      - SERVICE_NOW_CALLER_USERNAME=${MONITORING_SERVICE_NOW_CALLER_USERNAME:-System Administrator}
+      
+      # Application Configuration
+      - INCIDENT_FILE_PATH=/app/data/incident.json
+
+      # Service Configuration
+      - SERVICE_NAME=${MONITORED_SERVICE_NAME:-frontend}
+      - APPLICATION_NAME=${MONITORED_APPLICATION_NAME:-boutique-otel}
+      - BUSINESS_SERVICE=${MONITORED_BUSINESS_SERVICE:-online-astrolab-store}
+      
+      # SLA Thresholds
+      - SLA_THRESHOLD=${MONITORING_SLA_THRESHOLD:-0.01}
+      - CHECK_INTERVAL=${MONITORING_CHECK_INTERVAL:-60}
+    
+    volumes:
+      # Mount volume for incident tracking
+      - ./data:/app/data
+    depends_on:
+      kafka:
+        condition: service_healthy
+      prometheus:
+        condition: service_started      
+    
